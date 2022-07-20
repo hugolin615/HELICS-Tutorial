@@ -1,0 +1,23 @@
+{
+  "name": "multi_input",
+  "federates": [    
+    {
+      "directory": ".",
+      "exec": "helics_broker -f 2 --loglevel=warning",
+      "host": "localhost",
+      "name": "broker"
+    },
+    {
+      "directory": ".",
+      "exec": "python -u Charger.py 1",
+      "host": "localhost",
+      "name": "Charger"
+    },
+    {
+      "directory": ".",
+      "exec": "python -u Battery.py 1",
+      "host": "localhost",
+      "name": "Battery"
+    }
+  ]
+}

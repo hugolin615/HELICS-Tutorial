@@ -6,7 +6,7 @@ Run in terminal 1
 
 ```bash
 cd /path/to/HELICS-Tutorial/tutorials/1-DistributionFederation-ManualStart/
-helics_broker -f 2 --loglevel=3 --name=mainbroker
+helics_broker -f 2 --name=mainbroker
 ```
 
 Run in terminal 2
@@ -19,7 +19,7 @@ python federate1.py
 Run in terminal 3
 
 ```bash
-cd /path/to/HELICS-Tutorial/test_system_data/gldFeeders/B2/G_1/
-gridlabd DistributionSim_B2_G_1.glm
+cd /path/to/HELICS-Tutorial/user_guide_examples/to_sort/Example_1a/Distribution
+gridlabd IEEE_123_feeder_0.glm
 ```
 
