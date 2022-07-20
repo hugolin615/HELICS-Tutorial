@@ -161,7 +161,7 @@ if __name__ == "__main__":
     #hours = 24 * 7
     total_interval = int(60 * 60 * hours)
     update_interval = int(h.helicsFederateGetTimeProperty(fed, h.HELICS_PROPERTY_TIME_PERIOD))
-    print('DEBUG: update_interval is {update_interval}')
+    print(f'DEBUG: update_interval is {update_interval}')
     grantedtime = 0
 
 
@@ -180,7 +180,7 @@ if __name__ == "__main__":
 
         #rValue, iValue = h.helicsInputGetComplex((subid))
         temp = h.helicsInputGetComplex((subid))
-        print('DEBUG: what is intpu get: {temp} ')
+        print(f'DEBUG: what is intpu get: {temp} ')
         #logger.info("Python Federate grantedtime = {}".format(grantedtime))
         #logger.info("Load value = {} MVA".format(complex(rValue, iValue)/1000))
 
