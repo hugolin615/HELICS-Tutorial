@@ -5,57 +5,11 @@ import logging
 import numpy as np
 
 helicsversion = h.helicsGetVersion()
-print("Federate 1: HELICS version = {}".format(helicsversion))
+print("Federate 2: HELICS version = {}".format(helicsversion))
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.DEBUG)
-
-def create_broker():
-    initstring = "2 --name=mainbroker"
-    broker = h.helicsCreateBroker("zmq", "", initstring)
-    isconnected = h.helicsBrokerIsConnected(broker)
-
-    if isconnected == 1:
-        pass
-
-    return broker
-
-def create_federate(deltat=1.0, fedinitstring="--federates=1"):
-
-    fedinfo = h.helicsCreateFederateInfo()
-
-    h.helicsFederateInfoSetCoreName(fedinfo, "Combination Federate A")
-    # assert status == 0
-
-    h.helicsFederateInfoSetCoreTypeFromString(fedinfo, "zmq")
-    # assert status == 0
-
-    h.helicsFederateInfoSetCoreInitString(fedinfo, fedinitstring)
-    # assert status == 0
-
-    h.helicsFederateInfoSetTimeProperty(fedinfo, h.helics_property_time_delta, deltat)
-    # assert status == 0
-
-    # h.helicsFederateInfoSetLoggingLevel(fedinfo, 1)
-    # assert status == 0
-
-    fed = h.helicsCreateCombinationFederate("Combination Federate A", fedinfo)
-
-    return fed
-
-def destroy_federate2(fed, broker=None):
-    status = h.helicsFederateFinalize(fed)
-
-    state = h.helicsFederateGetState(fed)
-    assert state == 3
-
-    while (h.helicsBrokerIsConnected(broker)):
-        time.sleep(1)
-
-    h.helicsFederateFree(fed)
-
-    h.helicsCloseLibrary()
 
 def destroy_federate(fed):
     """
@@ -79,47 +33,6 @@ def destroy_federate(fed):
     logger.info("Federate finalized")
 
 
-
-def main():
-    # broker = create_broker() # Broker already created from 1st terminal
-    fed = create_federate()
-    
-    # Register publication
-    pubid = h.helicsFederateRegisterGlobalPublication(fed, "TransmissionSim/B2Voltage", h.helics_data_type_complex, "")
-    
-    # Register subscription
-    subid = h.helicsFederateRegisterSubscription(fed, "DistributionSim_B2_G_1/totalLoad", "")
-    
-    # Register endpoint
-    epid = h.helicsFederateRegisterEndpoint(fed, "ep1", None)
-    
-    # h.helicsSubscriptionSetDefaultComplex(subid, 0, 0)
-    
-    # Enter execution mode
-    h.helicsFederateEnterExecutingMode(fed)
-    
-    hours = 1
-    seconds = int(60 * 60 * hours)
-    grantedtime = -1
-    random.seed(0)
-    for t in range(0, seconds, 60 * 5):
-        c = complex(132790.562, 0) * (1 + (random.random() - 0.5)/2)
-        logger.info("Voltage value = {} kV".format(abs(c)/1000))
-        status = h.helicsPublicationPublishComplex(pubid, c.real, c.imag)
-        # status = h.helicsEndpointSendEventRaw(epid, "fixed_price", 10, t)
-        while grantedtime < t:
-            grantedtime = h.helicsFederateRequestTime(fed, t)
-        time.sleep(1)
-        rValue, iValue = h.helicsInputGetComplex(subid)
-        logger.info("Python Federate grantedtime = {}".format(grantedtime))
-        logger.info("Load value = {} MVA".format(complex(rValue, iValue)/1000))
-        
-    t = 60 * 60 * 24
-    while grantedtime < t:
-        grantedtime = h.helicsFederateRequestTime(fed, t)
-    logger.info("Destroying federate")
-    destroy_federate(fed)
-
 if __name__ == "__main__":
     # main()
     logger.info("Done!")
@@ -137,19 +50,24 @@ if __name__ == "__main__":
     pub_count = h.helicsFederateGetPublicationCount(fed)
     logger.debug(f"\tNumber of publications: {pub_count}")
 
+    print(fed.publications)
+    print(fed.subscriptions)
+
     # Diagnostics to confirm JSON config correctly added the required
     #   publications and subscriptions
     assert(sub_count == 1)
     assert(pub_count == 1)
     #subid = {}
     #for i in range(0, sub_count):
-    subid = h.helicsFederateGetInputByIndex(fed, 0)
+    #subid = h.helicsFederateGetInputByIndex(fed, 0)
+    subid = h.helicsFederateGetSubscription(fed, 'IEEE_123_feeder_0/totalLoad') # get subscrition by name
     sub_name = h.helicsSubscriptionGetTarget(subid)
     logger.debug(f"\tRegistered subscription---> {sub_name}")
 
     #pubid = {}
     #for i in range(0, pub_count):
-    pubid = h.helicsFederateGetPublicationByIndex(fed, 0)
+    #pubid = h.helicsFederateGetPublicationByIndex(fed, 0) # get publication by index
+    pubid = h.helicsFederateGetPublication(fed, 'TransmissionSim/transmission_voltage') # get publication by name
     pub_name = h.helicsPublicationGetName(pubid)
     logger.debug(f"\tRegistered publication---> {pub_name}")
 
@@ -171,19 +89,13 @@ if __name__ == "__main__":
         c = complex(132790.562, 0) * (1 + (random.random() - 0.5)/2)
         logger.info("Voltage value = {} kV".format(abs(c)/1000))
         status = h.helicsPublicationPublishComplex(pubid, c.real, c.imag)
+        #status = fed.publications['TransmissionSim/transmission_voltage'].publish((c.real, c.imag)) # this method not working; I don't know the publish's interface
 
         requested_time = grantedtime + update_interval
         logger.debug(f"Requesting time {requested_time}")
         grantedtime = h.helicsFederateRequestTime(fed, requested_time)
         logger.debug(f"Granted time {grantedtime}")
 
-
-        #rValue, iValue = h.helicsInputGetComplex((subid))
-        temp = h.helicsInputGetComplex((subid))
-        print(f'DEBUG: what is intpu get: {temp.real} {temp.imag} ')
-        #logger.info("Python Federate grantedtime = {}".format(grantedtime))
-        #logger.info("Load value = {} MVA".format(complex(rValue, iValue)/1000))
-
-
+   
     logger.info("Destroying federate")
     destroy_federate(fed)
